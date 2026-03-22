@@ -1,0 +1,65 @@
+networks:
+  # Where web client will live
+  client_net:
+    internal: true
+    ipam:
+      config:
+        - subnet: 172.20.0.0/28
+  
+  guard_net:
+    internal: true
+    ipam:
+      config:
+        - subnet: 172.20.0.16/28
+  
+  middle_net:
+    internal: true
+    ipam:
+      config:
+        - subnet: 172.20.0.32/28
+
+  exit_net:
+    internal: true 
+    ipam:
+      config:
+        - subnet: 172.20.0.48/28
+  
+  server_net:
+    internal: true
+    ipam:
+      config:
+        - subnet: 172.20.0.64/28
+    
+services:
+
+  # This container serves as the bridge between all subnets simulating a Tor connection.
+  router:
+    image: alpine
+    container_name: router
+    command: sh -c 'echo "Router Running" && sleep infinity'
+    sysctls:
+      - net.ipv4.ip_forward=1
+    cap_add:
+      - NET_ADMIN
+    networks:
+      client_net:
+        ipv4_address: 172.20.0.14
+      guard_net:
+        ipv4_address: 172.20.0.30
+      middle_net:
+        ipv4_address: 172.20.0.46
+      exit_net:
+        ipv4_address: 172.20.0.62
+      server_net:
+        ipv4_address: 172.20.0.78
+
+  test_client:
+    image: alpine
+    container_name: test_client
+    command: sh -c "ping -c 10 172.20.0.77"
+  web: 
+    image: httpd
+    container_name: web_server
+    networks:
+      server_net:
+        ipv4_address: 172.20.0.77
