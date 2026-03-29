@@ -77,6 +77,7 @@ def main():
         print(f"Exception details: {e}")
         exit()
 
+
     # Close connection to docker engine
     client.close()
 
