@@ -1,3 +1,4 @@
+# OLD COMPOSE FILE - First attempt at creating the network, but the static nature of it is unsuited for our task. Will delete after it's usefulness as a reference is spent
 networks:
   # Where web client will live
   client_net:
