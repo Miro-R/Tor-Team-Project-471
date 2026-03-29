@@ -6,7 +6,7 @@ import logging
 from pathlib import Path
 
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     format='%(levelname)s: %(message)s'
 )
 
@@ -77,6 +77,8 @@ def main():
         print(f"Exception details: {e}")
         exit()
 
+    logger.info("Connection with docker established")
+    client.containers.run("ubuntu", "echo hello world")
 
     # Close connection to docker engine
     client.close()
