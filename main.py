@@ -78,8 +78,8 @@ def main():
         exit()
 
     logger.info("Connection with docker established")
-    client.containers.run("ubuntu", "echo hello world")
-
+    output = client.containers.run("alpine", "echo hello world")
+    print(output)
     # Close connection to docker engine
     client.close()
 
