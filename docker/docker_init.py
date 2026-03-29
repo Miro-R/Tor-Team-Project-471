@@ -64,7 +64,7 @@ def main():
 
     logger = logging.getLogger(__name__)
 
-    print("Hello from tor-team-project-471!")
+    print("Initializing Docker")
 
     # Open connection to docker engine from environment
     try:
@@ -78,7 +78,6 @@ def main():
         exit()
 
     logger.info("Connection with docker established")
-    output = client.containers.run("alpine", "echo hello world")
     print(output)
     # Close connection to docker engine
     client.close()
