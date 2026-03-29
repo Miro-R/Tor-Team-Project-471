@@ -57,6 +57,7 @@ services:
     image: alpine
     container_name: test_client
     command: sh -c "ping -c 10 172.20.0.77"
+
   web: 
     image: httpd
     container_name: web_server
