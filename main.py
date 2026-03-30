@@ -1,14 +1,16 @@
-import docker
-import json
-import os
-import logging
+# Entry point for docker orchestration
 
+import json
+import logging
+import os
 from pathlib import Path
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(levelname)s: %(message)s'
-)
+import docker
+
+from networking import NetworkInfo, create_docker_networks
+
+logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+
 
 # TODO: Note this in requirements
 # Get docker context (works on UNIX machines with default configuration)
@@ -21,10 +23,9 @@ def get_docker_context() -> str:
     if os.environ.get("DOCKER_HOST"):
         logger.debug("Using DOCKER_HOST environment variable")
         return os.environ["DOCKER_HOST"]
-    
+
     config_path = Path.home() / ".docker" / "config.json"
     contexts_dir = Path.home() / ".docker" / "contexts" / "meta"
-
 
     # TODO: get rid of this disgusting nesting of conditionals and loops (extract into functions)
 
@@ -39,11 +40,11 @@ def get_docker_context() -> str:
         # iterate through directories to find the current context
         for context_subdir in contexts_dir.iterdir():
             meta_file = context_subdir / "meta.json"
-            
+
             if meta_file.exists():
                 with open(meta_file) as meta_json:
                     meta = json.load(meta_json)
-            
+
                 if meta.get("Name") == current_context:
                     endpoints = meta.get("Endpoints", {})
                     docker_endpoint = endpoints.get("docker", {})
@@ -55,10 +56,11 @@ def get_docker_context() -> str:
     default_socket = Path("/var/run/docker.sock")
     if default_socket.exists():
         logger.debug(f"Using fallback default: {default_socket}")
-        return f"unix:///{default_socket}"
+        return f"unix://{default_socket}"
 
     logger.error("Unable to find docker socket!")
-    raise RuntimeError("Could not find docker socket! (Is Docker Engine runnning?)") 
+    raise RuntimeError("Could not find docker socket! (Is Docker Engine runnning?)")
+
 
 def main():
 
@@ -70,17 +72,22 @@ def main():
     try:
         client = docker.DockerClient(base_url=get_docker_context())
         # client = docker.from_env()
-        # test connection
-        ping_res = client.ping()
-        assert ping_res
     except Exception as e:
         print(f"Exception details: {e}")
-        exit()
+        exit(-1)
+
+    if not client.ping():
+        logger.error(
+            "There was a problem communicating with Docker Engine. Please check your configuration!"
+        )
+        client.close()
+        exit(1)
 
     logger.info("Connection with docker established")
-    print(output)
+
     # Close connection to docker engine
     client.close()
+
 
 if __name__ == "__main__":
     main()
