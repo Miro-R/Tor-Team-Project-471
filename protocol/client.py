@@ -1,8 +1,8 @@
 import requests
 import os
 import sys
-from scapy import send, IP, TCP, HTTPRequest
 from flask import Flask, render_template
+import logging
 
 PORT = 1
 IP_ADDRESS = 0
@@ -33,8 +33,10 @@ class FlaskApp:
         self.client = the_client
         self.app.route("/")(self.index)
         self.app.route("/index")(self.index)
+        #self.app.route("/connect")(self.connection_test)
 
     def run(self):
+        self.connection_test(0)
         self.app.run(host=self.client.host_ip, port=self.client.port)
 
     def index(self):
@@ -43,11 +45,13 @@ class FlaskApp:
 
     # Build connect Cell in a HTTP packet
     # relay_num == starts at 0 
-    def get_create_cell(self,relay_num: Int):
-        self.client.relay_list[relay_num][IP_ADDRESS]
-        self.client.relay_list[relay_num][PORT]
+    def connection_test(self,relay_num: int):
+        dest_ip = self.client.relay_list[relay_num][IP_ADDRESS]
+        dest_port = self.client.relay_list[relay_num][PORT]
         
-        return IP(dst=self.client.relay_list[relay_num][IP_ADDRESS])/TCP(dport=self.client.relay_list[relay_num][PORT])/"GET /index.html HTTP/1.0 \n\n"
+        res = requests.get (f'http://{dest_ip}:{dest_port}/create')
+        self.app.logger.info('Response Content: %s ', (res.content))
+        return res
 
     def get_relay_cell(self):
         return
@@ -60,13 +64,12 @@ class FlaskApp:
 # sys.argv[2] = port_number
 # sys.argv[3] = port_number
 def main():
+    logging.basicConfig(filename='logs/record.log', level=logging.DEBUG)
+    logging.basicConfig(filename='logs/info.log', level=logging.INFO)
     client = Client(sys.argv[1], sys.argv[2])
     flaskApp = FlaskApp(__name__, client)
     flaskApp.run()
     print("client STARTING @ PORT: " + client.port)
-
-    # Get info of first relay
-
 
     
 
