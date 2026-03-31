@@ -7,6 +7,7 @@ from pathlib import Path
 
 import docker
 
+import tor_sim_consts
 from networking import NetworkInfo, create_docker_networks
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")

@@ -8,6 +8,8 @@ from docker.client import DockerClient
 from docker.models.networks import Network
 from docker.types import IPAMConfig, IPAMPool
 
+import tor_sim_consts
+
 # Enable logging
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 netLog = logging.getLogger(__name__)
@@ -25,6 +27,7 @@ class NetworkInfo:
     gateway: str
 
 
+# TODO: restructure this to dynamically check subnets as they're being generated
 def _gen_subnets(
     base_subnet: str, num_networks: int, subsubnet_prefix: int
 ) -> list[tuple[str, ipaddress.IPv4Network]]:
@@ -86,6 +89,10 @@ def create_docker_networks(
         client.networks.create(
             subsubnet[0],
             driver="bridge",
+            labels={
+                "simulation.project": tor_sim_consts.PROJECT_LABEL,
+                "simulation.run": tor_sim_consts.RUN_LABEL,
+            },
             ipam=IPAMConfig(
                 pool_configs=[
                     IPAMPool(
