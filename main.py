@@ -7,10 +7,11 @@ from pathlib import Path
 
 import docker
 
+import min_test
 import tor_sim_consts
 from networking import NetworkInfo, create_docker_networks
 
-logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+logging.basicConfig(level=logging.DEBUG, format="%(levelname)s: %(message)s")
 
 
 # TODO: Note this in requirements
@@ -85,6 +86,8 @@ def main():
         exit(1)
 
     logger.info("Connection with docker established")
+
+    min_test.test(client)
 
     # Close connection to docker engine
     client.close()
