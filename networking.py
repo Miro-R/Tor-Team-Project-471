@@ -27,14 +27,13 @@ class NetworkInfo:
 
 def _gen_subnets(
     base_subnet: str, num_networks: int, subsubnet_prefix: int
-) -> list[tuple[str, ipaddress.IPv4Network | ipaddress.IPv6Network]]:
+) -> list[tuple[str, ipaddress.IPv4Network]]:
     # Sanity checks
     # Check base_subnet validity
     try:
-        base = ipaddress.ip_network(base_subnet, strict=True)
+        base = ipaddress.IPv4Network(base_subnet, strict=True)
     except ValueError as e:
-        raise ValueError(f"Invalid subnet '{base_subnet}': {e}")
-
+        raise ValueError(f"Invalid (IPv4) subnet '{base_subnet}': {e}")
     if num_networks <= 0:
         raise ValueError(f"num_networks must be a positive integer, got {num_networks}")
 
