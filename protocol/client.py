@@ -6,7 +6,7 @@ import logging
 from cryptography.hazmat.primitives.asymmetric import dh
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from cryptography.hazmat.primitives import hashes
-from cryptography.fernet import Fernet
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 parameters = dh.generate_parameters(generator=2, key_size=512) # dh key exchange docs: https://cryptography.io/en/latest/hazmat/primitives/asymmetric/dh/
 
@@ -15,6 +15,7 @@ IP_ADDRESS = 0
 
 RELAY_1 = ["0.0.0.0", 8001]
 RELAY_2 = ["0.0.0.0", 8002]
+TEST_MSG = "Hello Relay"
 
 # client Info
 class Client:
@@ -30,7 +31,9 @@ class Client:
     dh_private_keys = []
     dh_shared_keys = []
     hkdf_list = []
-    fernets = []
+    ciphers = []
+    encrypters = []
+    decrypters = []
 
     def generate_dh_private_key(self):
         private_key = parameters.generate_private_key() #  dh key exchange docs: https://cryptography.io/en/latest/hazmat/primitives/asymmetric/dh/
@@ -53,6 +56,13 @@ class FlaskApp:
 
     def run(self):
         self.connection_test(0) # I dont think this is sending from the correct port/host?? Might be fine if we are running it in a docker container
+        
+
+        encrypted_onion = self.encrypt_msg(TEST_MSG, 0)
+        
+        # Send the "russian nesting doll" ecrypted message
+        self.send_onion(encrypted_onion,0)
+
         self.app.run(host=self.client.host_ip, port=self.client.port)
 
     def index(self):
@@ -101,27 +111,32 @@ class FlaskApp:
         # derive HKDF key 
         self.client.hkdf_list.append( HKDF( # HKDF Docs: https://cryptography.io/en/latest/hazmat/primitives/key-derivation-functions/#cryptography.hazmat.primitives.kdf.hkdf.HKDF
             algorithm=hashes.SHA256(),
-            length = 32,
+            length = 16,
             salt = None,
             info = b'handshake data',
         ).derive(self.client.dh_shared_keys[relay_num]))
-
+        
         self.app.logger.info('Derived key: %s ', self.client.hkdf_list[relay_num])
 
-        #self.client.fernets.append( Fernet(self.client.hkdf_list[relay_num]))
+        #Build Encryptor
+        iv = os.urandom(16)
+        cipher = Cipher(algorithms.AES(self.client.hkdf_list[relay_num]), modes.CBC(iv))
+        encrypter = cipher.encryptor()
+        self.client.encrypters.append(encrypter)
 
         return
     
     # relay_dest_num == the relay_num this message is intended for
-    def encrypt_msg(self, msg, relay_dest_num):
+    def encrypt_msg(self, msg:str , relay_dest_num):
         
+        encryptor = self.client.encrypters[relay_dest_num]
+        token = encryptor.update(bytes(msg, encoding='utf8')) #Convert message to bytes
 
-
-        return
+        return token
 
     # Sends the multi-layer 
     def send_onion(self, message, relay_num):
-
+        
 
         return
         

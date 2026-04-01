@@ -79,7 +79,7 @@ class FlaskApp:
 
         self.relay.hkdf = (HKDF( # HKDF Docs: https://cryptography.io/en/latest/hazmat/primitives/key-derivation-functions/#cryptography.hazmat.primitives.kdf.hkdf.HKDF
             algorithm=hashes.SHA256(),
-            length = 32,
+            length = 16,
             salt = None,
             info = b'handshake data',
         ).derive(self.relay.client_shared_key))
