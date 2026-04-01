@@ -65,7 +65,10 @@ def _gen_subnets(
         raise Exception(f"An unknown error occurred: {e}")
 
     subsubnet_tuple = zip(
-        [f"net{i}" for i in range(num_networks)],
+        [
+            f"{tor_sim_consts.PROJECT_LABEL}-{tor_sim_consts.RUN_LABEL}-net{i}"
+            for i in range(num_networks)
+        ],
         list(base.subnets(new_prefix=subsubnet_prefix)),
     )
 
@@ -82,7 +85,8 @@ def create_docker_networks(
     base = ipaddress.ip_network(base_subnet)
 
     # Assert that the docker service is running
-    assert client.ping
+    if not client.ping():
+        raise RuntimeError("networking.py: client unable to reach docker!")
 
     # create docker networks
     docker_networks = [

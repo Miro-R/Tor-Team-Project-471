@@ -5,7 +5,8 @@ from docker.client import DockerClient
 
 import tor_sim_consts
 from networking import create_docker_networks
-from router import create_router_containers
+
+# from router_depricated import create_router_containers
 
 logging.basicConfig(level=logging.DEBUG, format="%(levelname)s: %(message)s")
 
@@ -21,8 +22,6 @@ def test(client: DockerClient):
 
     debug_logger.info(f"Run label: {tor_sim_consts.RUN_LABEL}")
 
-    test_complete = False
-
     # Create three networks
     try:
         networks = create_docker_networks(client, "10.0.0.0/16", 3, 24)
@@ -32,14 +31,14 @@ def test(client: DockerClient):
 
         debug_logger.info(f"Created {len(networks)} networks")
 
-        router = create_router_containers(client, networks)
-        debug_logger.info(f"Created Router: {router.name}")
+        # router = create_router_containers(client, networks)
+        # debug_logger.info(f"Created Router: {router.name}")
 
         print("Test complete (see logger), press any key to cleanup")
         input()
         for net in networks:
             net.docker_network.remove()
-        router.docker_container.remove(force=True)
+        # router.docker_container.remove(force=True)
 
     except Exception as e:
         dirty_cleanup()
@@ -48,6 +47,6 @@ def test(client: DockerClient):
 
 def dirty_cleanup():
     subprocess.run(
-        "docker network ls --filter label=simulation.project=tor-network-471 -q | xargs docker network rm"
+        "sh -c 'docker network ls --filter label=simulation.project=tor-network-471 -q | xargs docker network rm'"
     )
-    subprocess.run("docker stop star_router && docker rm star_router")
+    # subprocess.run("docker stop star_router && docker rm star_router")
