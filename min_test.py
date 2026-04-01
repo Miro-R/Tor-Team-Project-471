@@ -1,9 +1,12 @@
+# Minimal Simulator Test
 import logging
 import subprocess
+from tkinter.constants import CURRENT
 
 from docker.client import DockerClient
 
 import tor_sim_consts
+from container import ContainerInfo, create_container
 from networking import create_docker_networks
 
 # from router_depricated import create_router_containers
@@ -29,6 +32,9 @@ def test(client: DockerClient):
         for net in networks:
             debug_logger.info(f"{net.name}: {net.subnet}, gateway={net.gateway}")
 
+            # create containers in networks (dgaf about types, this is a minimal test)
+            curr_container = create_container(network=net, client=client)
+            debug_logger.info(f"    Created {curr_container.name}")
         debug_logger.info(f"Created {len(networks)} networks")
 
         # router = create_router_containers(client, networks)
@@ -36,17 +42,30 @@ def test(client: DockerClient):
 
         print("Test complete (see logger), press any key to cleanup")
         input()
-        for net in networks:
-            net.docker_network.remove()
-        # router.docker_container.remove(force=True)
+
+        # since this is a minimal test, I will not repeat myself and just burn it down after completion
+        dirty_cleanup(client)
 
     except Exception as e:
-        dirty_cleanup()
+        dirty_cleanup(client)
         raise Exception("Test failed, exception details: " + str(e))
 
 
-def dirty_cleanup():
-    subprocess.run(
-        "sh -c 'docker network ls --filter label=simulation.project=tor-network-471 -q | xargs docker network rm'"
+# fail - burn it down
+def dirty_cleanup(client: DockerClient):
+
+    # Remove all containers by our project label
+    containers = client.containers.list(
+        all=True,
+        filters={"label": f"simulation.project={tor_sim_consts.PROJECT_LABEL}"},
     )
-    # subprocess.run("docker stop star_router && docker rm star_router")
+
+    for container in containers:
+        container.remove(force=True)
+
+    # remove all networks
+    networks = client.networks.list(
+        filters={"label": f"simulation.project={tor_sim_consts.PROJECT_LABEL}"}
+    )
+    for network in networks:
+        network.remove()
