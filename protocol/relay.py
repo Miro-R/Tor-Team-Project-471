@@ -36,7 +36,7 @@ class FlaskApp:
         self.app.route("/")(self.index)
         self.app.route("/index", methods=['GET', 'POST'] )(self.index)
         self.app.route("/create")(self.create)
-        self.app.route("/relay-begin")(self.create)
+        self.app.route("/decrypt")(self.decrypt) # only send messages to this when we want to unwrap one layer and forward the remaining layers to the next relay
 
     def run(self):
         self.app.run(host=self.relay.host_ip, port=self.relay.port)
@@ -68,7 +68,7 @@ class FlaskApp:
 
     def create(self):
         self.relay.dh_private_key = parameters.generate_private_key() # Create new DH private key for this particular connection
-        self.app.logger.info('Request data: %s ', (request.data)) 
+        self.app.logger.info('Request data: %s ', (request.args.get("dh_public"))) 
         self.app.logger.info('Request: %s ', (request))
 
         # Convert dh integer back into
@@ -87,6 +87,12 @@ class FlaskApp:
         self.app.logger.info('Derived key: %s ', self.relay.hkdf)
 
         return f'{self.get_pub_dh_as_integer()}'
+
+
+    def decrypt(self):
+        self.app.logger.info('Encrypted data: %s ', (request.args.get("message")))
+        
+        return " decrypt"
 
 # Pass command line argumets as follows:
 # sys.argv[1] = host_ip

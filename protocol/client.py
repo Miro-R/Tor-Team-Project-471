@@ -7,6 +7,7 @@ from cryptography.hazmat.primitives.asymmetric import dh
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.primitives import padding
 
 parameters = dh.generate_parameters(generator=2, key_size=512) # dh key exchange docs: https://cryptography.io/en/latest/hazmat/primitives/asymmetric/dh/
 
@@ -121,24 +122,63 @@ class FlaskApp:
         #Build Encryptor
         iv = os.urandom(16)
         cipher = Cipher(algorithms.AES(self.client.hkdf_list[relay_num]), modes.CBC(iv))
+        self.app.logger.info('Cipher: %s ', (cipher))
+
         encrypter = cipher.encryptor()
+        decryptor = cipher.decryptor()
+        self.app.logger.info('Encrypter: %s ', (encrypter))
+
+
         self.client.encrypters.append(encrypter)
+        self.client.decrypters.append(decryptor)
 
         return
     
+
+    def pad_message(self, byte_msg):
+        padder = padding.PKCS7(128).padder()
+        padded_data = padder.update(byte_msg)
+        padded_data += padder.finalize()
+        return padded_data
+
     # relay_dest_num == the relay_num this message is intended for
     def encrypt_msg(self, msg:str , relay_dest_num):
-        
+        self.app.logger.info('Encrypting: %s ', (msg))
         encryptor = self.client.encrypters[relay_dest_num]
-        token = encryptor.update(bytes(msg, encoding='utf8')) #Convert message to bytes
+        
+        byte_msg = bytes(msg, encoding='utf8')
+        #self.app.logger.info('Message as Bytes: %s ', (byte_msg))
+        
+        padded_msg=self.pad_message(byte_msg)
+        #mod= byte_msg % 16
+        buf = bytearray(len(byte_msg) + 15) # 15 = (cipher mode block size) - 1
+
+        #len_encrypted = encryptor.update_into(byte_msg, buf)
+        #self.app.logger.info('Encrypted Length: %s ', len_encrypted)
+        #token = bytes(buf[:len_encrypted]) #ERROR: ValueError: The length of the provided data is not a multiple of the block length.
+        #self.app.logger.info('Token Pre Finalized: %s ', len_encrypted) 
+        
+        token = encryptor.update(padded_msg) + encryptor.finalize()    
+
+        self.app.logger.info('Encrypted Token: %s ', token)
+
+        decrypter=self.client.decrypters[relay_dest_num]
+
+        decrypted_msg = decrypter.update(token) 
+        self.app.logger.info('Decrypted Mesage: %s ', (decrypted_msg))
 
         return token
 
     # Sends the multi-layer 
-    def send_onion(self, message, relay_num):
-        
+    def send_onion(self, message, relay_num: int):
 
-        return
+        self.app.logger.info('Sending Message: %s ', message)
+
+        dest_ip = self.client.relay_list[relay_num][IP_ADDRESS]
+        dest_port = self.client.relay_list[relay_num][PORT]
+        res = requests.get(f'http://{dest_ip}:{dest_port}/decrypt', params={"message": message})
+
+        return res.content
         
 
 
