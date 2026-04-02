@@ -7,6 +7,7 @@ from pathlib import Path
 
 import docker
 
+import container
 import min_test
 import tor_sim_consts
 from tor_types import NetworkInfo
@@ -87,6 +88,7 @@ def main():
 
     logger.info("Connection with docker established")
 
+    container.build_image(client)
     min_test.test(client)
 
     # Close connection to docker engine

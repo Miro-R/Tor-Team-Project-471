@@ -2,15 +2,12 @@
 
 import ipaddress
 import logging
-from dataclasses import dataclass
-from sqlite3.dbapi2 import connect
 
 from docker.client import DockerClient
 from docker.models.containers import Container
 from docker.models.networks import Network
 from docker.types import IPAMConfig, IPAMPool
 
-from container import ContainerInfo
 from tor_sim_consts import BASE_SUBNET, PROJECT_LABEL, RUN_LABEL
 from tor_types import ContainerInfo, NetworkInfo
 
@@ -76,7 +73,7 @@ def _create_router(
     # Set the router ip to be one before the broadcast address (255 - 1 = 254)
     name = "central-router"
     # Harcode this for now
-    image = "debian:stable-slim"
+    image = "tor-sim-node"
     docker_container = client.containers.run(
         image=image,
         name=name,

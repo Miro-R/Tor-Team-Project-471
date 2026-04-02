@@ -13,12 +13,17 @@ if __name__ == "__main__":
     exit(1)
 
 
+def build_image(client: DockerClient):
+    assert client.ping()
+    client.images.build(path=".", tag="tor-sim-node")
+
+
 # Creates a client - typically on the first network
 def create_container(
     network: NetworkInfo,
     client: DockerClient,
     name: str = "",
-    image: str = "debian:stable-slim",
+    image: str = "tor-sim-node",
     shell: str = "sh -c",
     command: str = "sleep infinity",
 ) -> ContainerInfo:
@@ -55,6 +60,7 @@ def create_container(
         docker_container=client.containers.run(
             image=image,
             network=network.name,
+            cap_add=["NET_ADMIN"],
             name=name,
             labels={
                 "simulation.project": PROJECT_LABEL,
@@ -67,11 +73,9 @@ def create_container(
         image=image,
     )
 
-    # add route to container. NOTE:
-    ci.docker_container.exec_run(f"ip route add {BASE_SUBNET} via {network.gateway}")
-
     # add ping
-    ci.docker_container.exec_run(
-        ["sh", "-c", "apt-get update && apt-get install -y iputils-ping"]
+    result = ci.docker_container.exec_run(
+        f"ip route add {BASE_SUBNET} via {network.gateway}"
     )
+    print(f"Route add result: {result}")
     return ci
