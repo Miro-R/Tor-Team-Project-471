@@ -5,19 +5,12 @@ from docker.client import DockerClient
 from docker.errors import NotFound
 from docker.models.containers import Container
 
-import tor_sim_consts
-from networking import NetworkInfo
+from tor_sim_consts import BASE_SUBNET, PROJECT_LABEL, RUN_LABEL
+from tor_types import ContainerInfo, NetworkInfo
 
 if __name__ == "__main__":
     print("container.py is not a standalone script!")
     exit(1)
-
-
-@dataclass
-class ContainerInfo:
-    docker_container: Container
-    name: str
-    image: str
 
 
 # Creates a client - typically on the first network
@@ -25,7 +18,7 @@ def create_container(
     network: NetworkInfo,
     client: DockerClient,
     name: str = "",
-    image: str = "alpine",
+    image: str = "debian:stable-slim",
     shell: str = "sh -c",
     command: str = "sleep infinity",
 ) -> ContainerInfo:
@@ -36,7 +29,7 @@ def create_container(
 
     # generate name if blank
     if name == "":
-        name = f"{network.name}-{image}"
+        name = f"{network.name}-{image.replace(':', '-')}"
 
     # Duplicate name handling
     # Check if name exists and if its been numbered,
@@ -58,14 +51,14 @@ def create_container(
                 name = f"{name}-0"
 
     # Create container and attach to specified network
-    return ContainerInfo(
+    ci = ContainerInfo(
         docker_container=client.containers.run(
             image=image,
             network=network.name,
             name=name,
             labels={
-                "simulation.project": tor_sim_consts.PROJECT_LABEL,
-                "simulation.run": tor_sim_consts.RUN_LABEL,
+                "simulation.project": PROJECT_LABEL,
+                "simulation.run": RUN_LABEL,
             },
             command=f'{shell} "{command}"',
             detach=True,
@@ -73,3 +66,12 @@ def create_container(
         name=name,
         image=image,
     )
+
+    # add route to container. NOTE:
+    ci.docker_container.exec_run(f"ip route add {BASE_SUBNET} via {network.gateway}")
+
+    # add ping
+    ci.docker_container.exec_run(
+        ["sh", "-c", "apt-get update && apt-get install -y iputils-ping"]
+    )
+    return ci

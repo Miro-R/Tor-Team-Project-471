@@ -9,7 +9,7 @@ import docker
 
 import min_test
 import tor_sim_consts
-from networking import NetworkInfo, create_docker_networks
+from tor_types import NetworkInfo
 
 logging.basicConfig(level=logging.DEBUG, format="%(levelname)s: %(message)s")
 

@@ -1,7 +1,5 @@
 # Minimal Simulator Test
 import logging
-import subprocess
-from tkinter.constants import CURRENT
 
 from docker.client import DockerClient
 
@@ -17,6 +15,7 @@ logging.basicConfig(level=logging.DEBUG, format="%(levelname)s: %(message)s")
 # Basic test of container orchestration
 def test(client: DockerClient):
 
+    dirty_cleanup(client)
     debug_logger = logging.getLogger(__name__)
 
     if not client.ping():
@@ -27,7 +26,7 @@ def test(client: DockerClient):
 
     # Create three networks
     try:
-        networks = create_docker_networks(client, "10.0.0.0/16", 3, 24)
+        networks = create_docker_networks(client, 3, 24)
 
         for net in networks:
             debug_logger.info(f"{net.name}: {net.subnet}, gateway={net.gateway}")
